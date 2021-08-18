@@ -1,0 +1,124 @@
+---
+title: "SVR"
+author: "Alejandra Espino G."
+output:
+  rmdformats::readthedown:
+    self_contained: true
+    thumbnails: true
+    lightbox: true
+    gallery: false
+    highlight: tango
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(fig.align = "center")
+
+```
+
+# Regresión de Soporte Vectorial (SVR)
+
+Las SVM se pueden adaptar para la regresión con una variable respuesta, de forma que hereda las propiedades del clasificador SVM.
+
+La diferencia es que en vez de que la variable respuesta sea categórica, es continua y por tanto, para cada nuevo observacion que entre en la SVR se estimaría el valor que le corresponde a esa observación como respuesta, considerando un hiperplano pero al cuál debería pertenecer la mayoría de los datos o a los más dentro de los márgenes.
+
+Suponemos que la variable respuesta tiene una relación asociada a las variables. Queremos encontrar una función $f$ que dependa de las variables explicativas y regrese una respuesta $y$, por lo que, queremos minimizar la función $$H(\beta,\beta_0) = \sum_{i=1}^N V(y_i-f(x_i)) + \frac{\lambda}{2}||\beta||^2 $$ donde
+
+$$\begin{align*}
+    V(r) =
+      \begin{cases}
+        0 &\text{ si } |r|<\epsilon\\
+        |r|-\epsilon &\text{e.o.c.}
+      \end{cases}
+\end{align*}$$
+
+es una función que determina qué tanta tolerancia se tiene al error.
+
+![](https://cdn.educba.com/academy/wp-content/uploads/2020/01/Support-Vector-Regression.jpg)
+
+## Implementación en R
+
+```{r,eval=FALSE}
+svm(formula, data, scale = TRUE, type = NULL, 
+    kernel = "radial", degree = 3, 
+    gamma = if (is.vector(x)) 1 else 1 / ncol(x),
+    coef0 = 0, cost = 1, nu = 0.5, class.weights = NULL, 
+    cachesize = 40, tolerance = 0.001, epsilon = 0.1,
+    shrinking = TRUE, cross = 0, probability = FALSE, fitted = TRUE,
+    ..., subset, na.action = na.omit)
+```
+
+### Argumentos:
+
+-   `formula`: una descripción simbólica del modelo que se va a ajustar
+
+-   `data`: un **data frame** que contiene las variables en el modelo. Por defecto, las variables se toman del entorno desde el que se llama "svm"
+
+-   `scale`: se utiliza en algunos casos para estandarizar la escala en la que se encuentran los datos
+
+-   `type`: **svm** se puede utilizar como una máquina de clasificación, de regresión o para la detección de novedades.
+
+    -   `C-classification`
+
+    -   `nu-classification`
+
+    -   `one-classification` (for novelty detection)
+
+    -   `eps-regression`
+
+    -   `nu-regression`
+    
+-   `kernel`: el kernel utilizado en el entrenamiento y la predicción. Podría considerar cambiar algunos de los siguientes parámetros, según el tipo de kernel.
+  
+    -   linear
+    
+    -   polinomial
+    
+    -   radial
+    
+    -   sigmoide
+
+-   `degree`: parámetro para especificar el grado de polinomio de kernel (default 3)
+
+-   `gamma`: parámetro necesario para todos los núcleos excepto lineal (default: 1 / (dimensión de los datos))
+
+
+
+
+
+
+
+## Ejemplo
+
+```{r}
+library(e1071)
+
+datos <- read.csv("Actuaría/8vo Semestre/Ciencia de Datos/Exposiciones/SVR/AirQualityUCI.csv", header = T)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
