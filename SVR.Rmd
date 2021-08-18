@@ -92,7 +92,7 @@ svm(formula, data, scale = TRUE, type = NULL,
 ```{r}
 library(e1071)
 
-datos <- read.csv("Actuaría/8vo Semestre/Ciencia de Datos/Exposiciones/SVR/AirQualityUCI.csv", header = T)
+datos <- read.csv("https://raw.githubusercontent.com/ale-espino/SVR/main/AirQualityUCI.csv", sep = ";")
 ```
 
 
