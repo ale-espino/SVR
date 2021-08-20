@@ -1,5 +1,5 @@
 ---
-title: "SVR"
+title: "Regresión de Soporte Vectorial (SVR)"
 author: "Alejandra Espino G."
 output:
   rmdformats::readthedown:
@@ -12,16 +12,21 @@ output:
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(fig.align = "center")
-
+library(ggplot2)
+library(gridExtra)
 ```
 
-# Regresión de Soporte Vectorial (SVR)
+# Aprendizaje supervisado
 
-Las SVM se pueden adaptar para la regresión con una variable respuesta, de forma que hereda las propiedades del clasificador SVM.
+La idea principal es seleccionar un hiperplano que mejor se ajuste a nuestro conjunto de datos y a su vez, haga buenas predicciones. Las SVM se pueden adaptar para la regresión con una variable respuesta cuantitativa, de forma que hereda algunas de las propiedades del clasificador SVM.
 
-La diferencia es que en vez de que la variable respuesta sea categórica, es continua y por tanto, para cada nuevo observacion que entre en la SVR se estimaría el valor que le corresponde a esa observación como respuesta, considerando un hiperplano pero al cuál debería pertenecer la mayoría de los datos o a los más dentro de los márgenes.
+La diferencia con las máquinas de soporte vectorial, es que en lugar de que la variable respuesta sea categórica, es continua y por tanto, para cada nueva observación que entre en la SVR se estimaría el valor que le corresponde a esa observación como respuesta.
 
-Suponemos que la variable respuesta tiene una relación asociada a las variables. Queremos encontrar una función $f$ que dependa de las variables explicativas y regrese una respuesta $y$, por lo que, queremos minimizar la función $$H(\beta,\beta_0) = \sum_{i=1}^N V(y_i-f(x_i)) + \frac{\lambda}{2}||\beta||^2 $$ donde
+La forma para hacer la estimación de la respuesta es considerando, como en SVM, un hiperplano con márgenes dentro de los cuáles deberían estar la mayoría de los datos, en contraste con la idea de las SVM, donde era preferible que las observaciones se encontraran fuera de los márgenes.
+
+Suponemos que la variable respuesta tiene una relación asociada a las variables. Queremos encontrar una función $f$ que dependa de las variables explicativas y regrese una respuesta $y$, para estimar el vector de parámetros $\beta$, en el caso lineal, queremos minimizar la función
+
+$$H(\beta,\beta_0) = \sum_{i=1}^N V(y_i-f(x_i)) + \frac{\lambda}{2}||\beta||^2 $$ donde
 
 $$\begin{align*}
     V(r) =
@@ -31,23 +36,40 @@ $$\begin{align*}
       \end{cases}
 \end{align*}$$
 
-es una función que determina qué tanta tolerancia se tiene al error.
+es una función conocida como "$\epsilon-insensible$", que determina la tolerancia que se tiene al error.
 
+::: {style="text-align:center;"}
 ![](https://cdn.educba.com/academy/wp-content/uploads/2020/01/Support-Vector-Regression.jpg)
+:::
 
-## Implementación en R
+De forma general, aún si la relación entre las variables explicativas y la variable respuesta no es lineal, el método kernel dentro de modelos de soporte vectorial, sirve para la estimación de dicha función
+
+$$
+f(x) = \sum_{m=1}^M\beta_mh_m(x)+ \beta_0
+$$
+
+donde $\{h_m(x)\}, m=1,2,…,M$ es un conjunto de funciones que tienen la finalidad de aproximar la función de regresión. Para estimar $\beta$ y $\beta_0$, minimizamos:
+
+$$
+H(\beta,\beta_0) = \sum_{i=1}^N V(y_i-f(x_i)) + \frac{\lambda}{2}\sum\beta_m^2
+$$
+
+el resultado de la estimación para $f$ es:
+
+$$
+\hat{f}(x) = \sum_{i=1}^N\hat{\alpha}_iK(x,x_i)
+$$
+
+donde $K(x,y)=\sum_{m=1}^Mh_m(x)h_m(y)$ y $\hat{\alpha} = (HH^T+\lambda I)^{-1}y$ y $H$ es una matriz de $N\times M$ con elementos de $h_m(x_i)$. Notamos que, no es necesario hacer el cálculo de cada uno de los elementos de la matriz, porque basta con calcular los productos internos que pueden ser reemplazados con una función kernel.
+
+# Implementación en R
 
 ```{r,eval=FALSE}
 svm(formula, data, scale = TRUE, type = NULL, 
-    kernel = "radial", degree = 3, 
-    gamma = if (is.vector(x)) 1 else 1 / ncol(x),
-    coef0 = 0, cost = 1, nu = 0.5, class.weights = NULL, 
-    cachesize = 40, tolerance = 0.001, epsilon = 0.1,
-    shrinking = TRUE, cross = 0, probability = FALSE, fitted = TRUE,
-    ..., subset, na.action = na.omit)
+    kernel = "radial", degree = 3, ...)
 ```
 
-### Argumentos:
+## Argumentos:
 
 -   `formula`: una descripción simbólica del modelo que se va a ajustar
 
@@ -66,59 +88,108 @@ svm(formula, data, scale = TRUE, type = NULL,
     -   `eps-regression`
 
     -   `nu-regression`
-    
+
 -   `kernel`: el kernel utilizado en el entrenamiento y la predicción. Podría considerar cambiar algunos de los siguientes parámetros, según el tipo de kernel.
-  
+
     -   linear
-    
-    -   polinomial
-    
+
+    -   polynomial
+
     -   radial
-    
-    -   sigmoide
 
--   `degree`: parámetro para especificar el grado de polinomio de kernel (default 3)
+    -   sigmoid
 
--   `gamma`: parámetro necesario para todos los núcleos excepto lineal (default: 1 / (dimensión de los datos))
+-   `degree`: parámetro para especificar el grado de polinomio de kernel
 
+# Ejemplo
 
-
-
-
-
-
-## Ejemplo
+Para desarrollar un ejemplo de regresión de soporte vectorial, utilizaremos un *dataset* simple, con el objetivo de poder visualizar la información. El *dataset* es un registro sobre el nivel del IQ, con respecto del plomo.
 
 ```{r}
 library(e1071)
 
-datos <- read.csv("https://raw.githubusercontent.com/ale-espino/SVR/main/AirQualityUCI.csv", sep = ";")
+datos <- read.csv("https://raw.githubusercontent.com/ale-espino/SVR/main/plomo.csv")
 ```
 
+Realizamos el modelo para cada tipo de *kernel*
 
+```{r,collapse=TRUE}
+modelo  <- svm(IQ~Plomo, datos, type = "eps-regression", kernel = "linear")
+modelo2 <- svm(IQ~Plomo, datos, type = "eps-regression", kernel = "polynomial")
+modelo3 <- svm(IQ~Plomo, datos, type = "eps-regression", kernel = "radial")
+modelo4 <- svm(IQ~Plomo, datos, type = "eps-regression", kernel = "sigmoid")
+```
 
+```{r,warning=FALSE,echo=FALSE}
+grid.arrange(
+ggplot(datos, aes(Plomo, IQ)) + geom_point(size=2, color="#FFC300")   +
+  geom_line(aes(datos$Plomo, modelo$fitted)) + ggtitle("Linear") + theme_minimal(),
 
+ggplot(datos, aes(Plomo, IQ)) + geom_point(size=2, color="#DB8313")   +
+  geom_line(aes(datos$Plomo, modelo2$fitted)) + ggtitle("Polinomial")  + theme_minimal(),
 
+ggplot(datos, aes(Plomo, IQ)) + geom_point(size=2, color="#C70039")   +
+  geom_line(aes(datos$Plomo, modelo3$fitted)) + ggtitle("Radial") + theme_minimal(),
 
+ggplot(datos, aes(Plomo, IQ)) + geom_point(size=2, color="#6B1CA5")   +
+  geom_line(aes(datos$Plomo, modelo4$fitted)) + ggtitle("Sigmoide") + theme_minimal(),
+  ncol=2)
+```
 
+## Output del modelo
 
+```{r}
+names(modelo)
+```
 
+-   `SV`: el vector de soporte, posiblemente escalado
 
+-   `index`: los índices que toma el vector de soporte
 
+-   `coefs`: los correspondientes coeficientes multiplicados por las etiquetas de entrenamiento
 
+-   `rho`: el intercepto
 
+-   `sigma`: En el caso de un modelo de regresión probabilístico, el parámetro de escala de la distribución de laplace hipotética (media cero) estimada por máxima verosimilitud
 
+-   `fitted`: valores ajustados (predicción)
 
+-   `residuals`: los residuales del modelo
 
+## Residuales
 
+```{r,echo=FALSE}
+grid.arrange(
+  ggplot() + geom_point(aes(modelo$fitted,modelo$residuals), color="#FFC300") + geom_hline(yintercept = 0) + ggtitle("Linear") + theme_minimal(),
+  
+  ggplot() + geom_point(aes(modelo2$fitted,modelo2$residuals), color="#DB8313") + geom_hline(yintercept = 0) + ggtitle("Polinomial") + theme_minimal(),
+  
+  ggplot() + geom_point(aes(modelo3$fitted,modelo3$residuals), color="#C70039") + geom_hline(yintercept = 0) + ggtitle("Radial") + theme_minimal(),
+  
+  ggplot() + geom_point(aes(modelo4$fitted,modelo4$residuals), color="#6B1CA5") + geom_hline(yintercept = 0) + ggtitle("Sigmoide") + theme_minimal(),
+  
+  ncol=2, top="Residuales")
+```
 
+## Ajuste del modelo
 
+Como vimos en clase:
 
+$$
+R^2 = 1-\frac{RSS}{TSS}
+$$
 
+```{r, echo=FALSE}
+knitr::kable(data.frame("Modelo" = c("Linear", "Polinomial", "Radial", "Sigmoide"), "R-squared" = c(1-var(modelo$residuals)/var(datos$IQ),1-var(modelo2$residuals)/var(datos$IQ),1-var(modelo3$residuals)/var(datos$IQ), 1-var(modelo4$residuals)/var(datos$IQ))))
 
+```
 
+# Referencias
 
+-   [The Elements of Statistical Learning](https://web.stanford.edu/~hastie/Papers/ESLII.pdf), T. Hastie, R. Tibshirani, J. Friedman.
 
+-   [An Introduction to Statistical Learning](https://www.dropbox.com/s/krvhmt7z8zxhl7f/ISLRv2_website.pdf?dl=0), T. Hastie, R. Tibshirani, G. James, D. Witten
 
+-   [R Documentation](https://www.rdocumentation.org/packages/e1071/versions/1.7-8/topics/svm), Support Vector Machines `e1071` [`svm()`]
 
-
+-   [GitHub](https://github.com/ale-espino/SVR). (Ingresar para obtener el código)
